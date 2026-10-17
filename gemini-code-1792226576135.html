@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MLB 勁旅對決 - 全技能量化天梯與球卡畢業診斷系統</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --panel: #1e293b;
+      --panel-hover: #26354d;
+      --border: #334155;
+      --text: #f8fafc;
+      --subtext: #94a3b8;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.2);
+      --hof-orange: #f97316;
+      --hof-bg: #7c2d12;
+      --moment: #10b981;
+      --gold: #eab308;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Microsoft JhengHei", sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0 0 8px 0;
+      font-size: 26px;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    header p {
+      margin: 0;
+      color: var(--subtext);
+      font-size: 14px;
+    }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: #0f172a;
+      color: var(--subtext);
+      border: 1px solid var(--border);
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .container {
+      max-width: 1440px;
+      margin: 24px auto;
+      padding: 0 20px;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* 篩選控制列 */
+    .filter-bar {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      padding: 18px;
+      border-radius: 12px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .control-group label {
+      font-size: 12px;
+      font-weight: bold;
+      color: var(--accent);
+    }
+    input, select {
+      background: #0f172a;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    /* 階級快速切換膠囊 */
+    .cat-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .pill {
+      padding: 7px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--subtext);
+      transition: 0.2s;
+    }
+    .pill.active {
+      background: var(--accent);
+      color: #0f172a;
+      border-color: var(--accent);
+    }
+    .pill-hof.active {
+      background: var(--hof-orange);
+      color: #fff;
+      border-color: var(--hof-orange);
+    }
+
+    /* 表格樣式 */
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 960px;
+    }
+    th, td {
+      padding: 14px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    th {
+      background: #0f172a;
+      color: var(--accent);
+      font-weight: bold;
+      white-space: nowrap;
+    }
+    tr:hover { background-color: var(--panel-hover); }
+
+    /* 標籤與徽章 */
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 12px;
+      text-align: center;
+      min-width: 44px;
+    }
+    .tier-S-plus { background: #e11d48; color: white; }
+    .tier-S { background: #f97316; color: white; }
+    .tier-A { background: #8b5cf6; color: white; }
+    .tier-B { background: #3b82f6; color: white; }
+    .tier-C { background: #64748b; color: white; }
+    .tier-D, .tier-F { background: #334155; color: #94a3b8; }
+
+    /* 段位顏色 (HOF 改為亮橘色系) */
+    .cat-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-right: 4px;
+    }
+    .cat-HOF {
+      background: linear-gradient(135deg, #9a3412 0%, #ea580c 100%);
+      color: #ffedd5;
+      border: 1px solid #fb923c;
+      box-shadow: 0 0 8px rgba(249, 115, 22, 0.35);
+    }
+    .cat-Moment { background: #064e3b; color: #a7f3d0; border: 1px solid #10b981; }
+    .cat-Gold { background: #713f12; color: #fef08a; border: 1px solid #eab308; }
+    .cat-Silver { background: #334155; color: #e2e8f0; border: 1px solid #94a3b8; }
+    .cat-Bronze { background: #451a03; color: #fdba74; border: 1px solid #d97706; }
+    .cat-Iron { background: #1e293b; color: #94a3b8; border: 1px solid #475569; }
+
+    /* 硬性限制 vs 軟性推薦標籤 */
+    .rule-hard {
+      background: rgba(244, 63, 94, 0.18);
+      color: #fda4af;
+      border: 1px solid #f43f5e;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 3px;
+    }
+    .rule-soft {
+      background: rgba(16, 185, 129, 0.15);
+      color: #6ee7b7;
+      border: 1px solid #059669;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      display: inline-block;
+    }
+
+    .score-num {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+    .bonus-hint {
+      font-size: 11px;
+      color: #4ade80;
+      display: block;
+      font-weight: bold;
+    }
+    .penalty-hint {
+      font-size: 11px;
+      color: #fb7185;
+      display: block;
+      font-weight: bold;
+    }
+
+    /* 第二部分：球員卡三技能畢業檢測器 */
+    .eval-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+    }
+    @media (max-width: 960px) {
+      .eval-grid { grid-template-columns: 1fr; }
+    }
+    .card-box {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card-box-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+    }
+    .card-box-header h2 {
+      margin: 0;
+      color: var(--accent);
+      font-size: 20px;
+    }
+    .reset-btn {
+      background: #334155;
+      color: #f8fafc;
+      border: 1px solid #64748b;
+      padding: 7px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .reset-btn:hover {
+      background: var(--hof-orange);
+      border-color: var(--hof-orange);
+    }
+
+    .slot-box {
+      background: #0f172a;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+    .slot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #e2e8f0;
+    }
+    .slot-controls {
+      display: grid;
+      grid-template-columns: 3fr 1fr;
+      gap: 10px;
+    }
+
+    .report-header {
+      text-align: center;
+      padding: 20px;
+      background: #0f172a;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 2px solid var(--border);
+    }
+    .total-score-big {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .verdict-title {
+      font-size: 21px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+    .verdict-sub {
+      font-size: 14px;
+      color: var(--subtext);
+      margin-top: 6px;
+    }
+    .analysis-item {
+      background: #0f172a;
+      border-left: 4px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 6px;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .analysis-item.warn {
+      border-left-color: #f43f5e;
+      background: rgba(244, 63, 94, 0.12);
+    }
+    .analysis-item.good {
+      border-left-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚾ MLB 勁旅對決 - 全技能量化天梯與球卡畢業診斷系統</h1>
+  <p>收錄全圖鑑 158 招技能・嚴格區分「🔴 遊戲硬性限制」與「🟢 軟性戰術推薦」・已校正排位賽客場與後援實戰權重</p>
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('tab-ranking', this)">📊 第一部分：全技能天梯排行</button>
+    <button class="tab-btn" onclick="switchTab('tab-evaluator', this)">🃏 第二部分：球員卡三技畢業檢測 (AI 診斷)</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- ==================== 第一部分：技能天梯排行 ==================== -->
+  <div id="tab-ranking" class="tab-content active">
+    <div class="cat-pills">
+      <div class="pill active" onclick="setQuickCat('ALL', this)">全部技能 (158)</div>
+      <div class="pill pill-hof" onclick="setQuickCat('HOF', this)">🟧 HOF 名人堂黑技 (49)</div>
+      <div class="pill" onclick="setQuickCat('Moment', this)">💚 Moment 專屬綠技 (44)</div>
+      <div class="pill" onclick="setQuickCat('GENERAL', this)">⭐ 一般技能總覽 (金/銀/銅/鐵)</div>
+      <div class="pill" onclick="setQuickCat('Gold', this)">🥇 黃金技 (36)</div>
+      <div class="pill" onclick="setQuickCat('Silver', this)">🥈 白銀技 (9)</div>
+      <div class="pill" onclick="setQuickCat('Bronze', this)">🥉 青銅/鋼鐵技 (20)</div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="control-group">
+        <label>🔍 搜尋技能名稱 / 效果關鍵字</label>
+        <input type="text" id="searchInput" placeholder="例如：客場、仰角、二壘、新秀..." oninput="renderRanking()">
+      </div>
+
+      <div class="control-group">
+        <label>⚾ 投打分類</label>
+        <select id="typeFilter" onchange="renderRanking()">
+          <option value="ALL">全部 (打者 + 投手)</option>
+          <option value="打者">僅看打者 (BATTER)</option>
+          <option value="投手">僅看投手 (PITCHER)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>🧤 指定守位 / 投手輪值 (僅硬性限制會扣分)</label>
+        <select id="posFilter" onchange="renderRanking()">
+          <option value="ALL">全部守位 (顯示基準分)</option>
+          <optgroup label="野手守備位置">
+            <option value="C">C (捕手 - 中線/光環)</option>
+            <option value="1B">1B (一壘手)</option>
+            <option value="2B">2B (二壘手 - 中線)</option>
+            <option value="3B">3B (三壘手)</option>
+            <option value="SS">SS (游擊手 - 中線)</option>
+            <option value="LF">LF (左外野)</option>
+            <option value="CF">CF (中外野 - 中線)</option>
+            <option value="RF">RF (右外野)</option>
+            <option value="DH">DH (指定打擊)</option>
+          </optgroup>
+          <optgroup label="投手輪值定位 (嚴格區分先發番號/RP/CP)">
+            <option value="SP1">SP1 (第 1 號王牌先發)</option>
+            <option value="SP2">SP2 (第 2 號先發)</option>
+            <option value="SP34">SP3~4 (第 3、4 號先發)</option>
+            <option value="SP5">SP5 (第 5 號先發)</option>
+            <option value="RP12">RP1~2 (中繼 1、2 號 / 勝利組佈局)</option>
+            <option value="RP345">RP3~5 (中繼 3、4、5 號 / 長中繼)</option>
+            <option value="CP">CP (終結者 / 關門專屬)</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>🏏 指定打序棒次 (僅硬性棒次限制會扣分)</label>
+        <select id="batOrderFilter" onchange="renderRanking()">
+          <option value="ALL">不限棒次</option>
+          <option value="1">第 1 棒</option>
+          <option value="2">第 2 棒</option>
+          <option value="3">第 3 棒</option>
+          <option value="4">第 4 棒</option>
+          <option value="5">第 5 棒</option>
+          <option value="6">第 6~9 棒 (後段棒次)</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label>📈 檢視技能等級 (S ~ S4)</label>
+        <select id="lvlFilter" onchange="renderRanking()">
+          <option value="1.00">等級 S (圖鑑基準)</option>
+          <option value="1.08">等級 S1 (+8%)</option>
+          <option value="1.16">等級 S2 (+16%)</option>
+          <option value="1.25">等級 S3 (+25%)</option>
+          <option value="1.35">等級 S4 (+35% 滿突)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 55px;">排名</th>
+            <th style="width: 70px;">Tier</th>
+            <th style="width: 155px;">技能名稱</th>
+            <th style="width: 115px;">段位 / 類型</th>
+            <th style="width: 115px;">實戰量化分</th>
+            <th style="width: 230px;">🔴 遊戲硬性限制 / 🟢 軟性推薦</th>
+            <th>技能詳細效果與排位賽實戰解析</th>
+          </tr>
+        </thead>
+        <tbody id="rankingBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== 第二部分：球員卡三技畢業檢測 ==================== -->
+  <div id="tab-evaluator" class="tab-content">
+    <div class="eval-grid">
+      <!-- 左側：設定球卡與三技能 -->
+      <div class="card-box">
+        <div class="card-box-header">
+          <h2>🛠️ 第一步：設定球員定位與抽到的 3 個技能</h2>
+          <button class="reset-btn" onclick="resetForNextPlayer()">🔄 換下一位球員 (重置等級回 S)</button>
+        </div>
+        
+        <div class="filter-bar" style="grid-template-columns: 1fr 1fr; margin-bottom: 16px; padding: 14px;">
+          <div class="control-group">
+            <label>1. 球員卡階級種類 (切換自動重置等級回S)</label>
+            <select id="evalCardType" onchange="onPlayerConfigChange(true)">
+              <option value="SIG">簽名卡 / 一般卡 (3格皆為金/銀/銅/鐵)</option>
+              <option value="MOMENT">Moment 時刻卡 (第1格綠技 + 2格一般)</option>
+              <option value="HOF">HOF 名人堂卡 (最多3格黑技或一般)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>2. 球員投打身份</label>
+            <select id="evalPlayerRole" onchange="onPlayerConfigChange(true)">
+              <option value="打者">打者 (BATTER)</option>
+              <option value="投手">投手 (PITCHER)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>3. 球員配置守位 / 輪值番號 (嚴格檢測限制)</label>
+            <select id="evalPos" onchange="onPlayerConfigChange(false)">
+              <!-- 由 JS 動態填入 -->
+            </select>
+          </div>
+
+          <div class="control-group" id="evalBatOrderGroup">
+            <label>4. 排定打序棒次 (嚴格檢測棒次限制)</label>
+            <select id="evalBatOrder" onchange="evaluateCard()">
+              <option value="1">第 1 棒</option>
+              <option value="2">第 2 棒</option>
+              <option value="3" selected>第 3 棒</option>
+              <option value="4">第 4 棒</option>
+              <option value="5">第 5 棒</option>
+              <option value="6">第 6~9 棒 (後段打線)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 技能欄位 1 -->
+        <div class="slot-box">
+          <div class="slot-header">
+            <span id="slot1Title">【第 1 格技能】</span>
+            <span id="slot1ScoreText" style="color: var(--accent);">0.0 分</span>
+          </div>
+          <div class="slot-controls">
+            <select id="slot1Skill" onchange="evaluateCard()"></select>
+            <select id="slot1Lvl" onchange="evaluateCard()">
+              <option value="1.00" selected>等級 S</option>
+              <option value="1.08">等級 S1</option>
+              <option value="1.16">等級 S2</option>
+              <option value="1.25">等級 S3</option>
+              <option value="1.35">等級 S4</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 技能欄位 2 -->
+        <div class="slot-box">
+          <div class="slot-header">
+            <span id="slot2Title">【第 2 格技能】</span>
+            <span id="slot2ScoreText" style="color: var(--accent);">0.0 分</span>
+          </div>
+          <div class="slot-controls">
+            <select id="slot2Skill" onchange="evaluateCard()"></select>
+            <select id="slot2Lvl" onchange="evaluateCard()">
+              <option value="1.00" selected>等級 S</option>
+              <option value="1.08">等級 S1</option>
+              <option value="1.16">等級 S2</option>
+              <option value="1.25">等級 S3</option>
+              <option value="1.35">等級 S4</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 技能欄位 3 -->
+        <div class="slot-box">
+          <div class="slot-header">
+            <span id="slot3Title">【第 3 格技能】</span>
+            <span id="slot3ScoreText" style="color: var(--accent);">0.0 分</span>
+          </div>
+          <div class="slot-controls">
+            <select id="slot3Skill" onchange="evaluateCard()"></select>
+            <select id="slot3Lvl" onchange="evaluateCard()">
+              <option value="1.00" selected>等級 S</option>
+              <option value="1.08">等級 S1</option>
+              <option value="1.16">等級 S2</option>
+              <option value="1.25">等級 S3</option>
+              <option value="1.35">等級 S4</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右側：AI 畢業診斷報告 -->
+      <div class="card-box">
+        <div class="card-box-header">
+          <h2>🤖 第二步：AI 球卡技能組畢業診斷報告</h2>
+        </div>
+        <div class="report-header" id="reportHeaderBox">
+          <div style="font-size: 13px; color: var(--subtext);">三技能實戰綜合總分</div>
+          <div class="total-score-big" id="totalScoreDisplay">0.0</div>
+          <div class="verdict-title" id="verdictTitle">請選擇技能進行檢測</div>
+          <div class="verdict-sub" id="verdictSub">系統將嚴格檢查「遊戲硬性守位/棒次限制」並給出畢業判定</div>
+        </div>
+
+        <div id="aiAnalysisList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*
+  posRule (遊戲內硬性守位/輪值限制，放錯必扣分):
+  - 打者:
+    "ANY": 全守位通用 (不扣分)
+    "DH_ONLY": 限 DH (BIG HURT, BORN TO HIT)
+    "NO_DH": 限非 DH 野手 (全能型球員)
+    "2B_ONLY": 限 2B (LITTLE BIG MAN)
+    "LF_RF": 限 LF 或 RF (強健之肩)
+    "MID_ONLY": 限 C, 2B, SS, CF (核心主導者)
+    "C_ONLY": 限 C 捕手 (指揮官, 捕手引導)
+    "PH_ONLY": 限板凳代打 (特別代打，放先發扣分)
+  - 投手:
+    "P_ALL": 全投手通用 (不扣分)
+    "SP1": 限第 1 號先發 (300勝投手, 獨一無二)
+    "SP12": 限第 1、2 號先發 (前線王牌, 王牌雙投)
+    "SP34": 限第 3、4 號先發 (信賴先發)
+    "SP_ALL": 限先發 SP1~SP5 (大師, 關鍵主力, BIG UNIT, 主力, 輕鬆局數, 慢熱型(投), Standout(投), 質量開始, 刻苦訓練, 好的開始, 大吃局數)
+    "SP345_RP345": 限 3/4/5號先發 或 3/4/5號中繼 (新秀)
+    "RP_ONLY": 限中繼 RP1~5，先發與CP皆無效 (首席佈局, 必勝組)
+    "CP_ONLY": 限終結者 CP，先發與中繼RP皆無效 (最後防線, LOCKDOWN, Closer)
+    "RP_CP": 限後援 (RP 或 CP)，先發無效 (牛棚主力, 牛棚王牌, FLASHBACK(投), 雙重終結者, 一人投手)
+
+  orderRule (遊戲內硬性棒次限制，放錯必扣分):
+  - "ANY": 全棒次通用 (不扣分)
+  - "12": 限第 1、2 棒 (速度&觸擊, 一棒打者, 接觸型打者)
+  - "2": 限第 2 棒 (LITTLE BIG MAN)
+  - "3": 限第 3 棒 (CHIPPER)
+  - "2345": 限第 2~5 棒 (專精打擊：2、3棒滿分，4、5棒次高，1或6~9棒扣分)
+  - "345": 限第 3、4、5 棒 (長打本能, 中心打線, 中央打線)
+  - "6789": 限第 6、7、8、9 棒 (隱藏威脅, 下位打線)
+  - "126789": 限第 1、2、6~9 棒，禁放 3~5 棒 (安打製造機, 守備專家)
+*/
+
+const skillsDB = [
+  // ---------------- 1. HOF 名人堂打者黑技 (25招) ----------------
+  { name: "BIG HURT", cat: "HOF", type: "打者", baseScore: 64.5, hardRuleText: "🔴 硬性限定：DH (指定打擊)", softRecText: "建議 3~5 棒", posRule: "DH_ONLY", orderRule: "ANY", desc: "常駐對手威變控速-8；於DH位置時對手威變控速額外-11(合計暴扣-19)！全遊戲最強Debuff。" },
+  { name: "LITTLE BIG MAN", cat: "HOF", type: "打者", baseScore: 59.2, hardRuleText: "🔴 硬性限定：2B ＋ 第 2 棒", softRecText: "左打/左右開弓佳", posRule: "2B_ONLY", orderRule: "2", desc: "配置於2B時力準選跑+8；左打席對手威變-5；以第2棒出戰時對手威變額外-6(合計-11)。" },
+  { name: "預告一擊", cat: "HOF", type: "打者", baseScore: 57.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (戰術建議 1~5 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變-7、自身力量+7；前一打席未開轟時本次打席對手威變額外-6(合計-13)！無棒次限制。" },
+  { name: "CHIPPER", cat: "HOF", type: "打者", baseScore: 56.8, hardRuleText: "🔴 硬性限定：第 3 棒 (左右開弓佳)", softRecText: "全守位通用", posRule: "ANY", orderRule: "3", desc: "常駐力準選+8；兩打兼優對手威變-6；以第3棒出賽時對手威變額外-5(合計-11)。" },
+  { name: "專精打擊", cat: "HOF", type: "打者", baseScore: 56.5, hardRuleText: "🔴 硬性限定：第 2、3 棒 (或第 4、5 棒)", softRecText: "全守位通用", posRule: "ANY", orderRule: "2345", desc: "常駐對手威變-8；第2、3棒準確+4且對手威變額外-4(合計-12)；第4、5棒力準選+6。" },
+  { name: "長打本能", cat: "HOF", type: "打者", baseScore: 53.8, hardRuleText: "🔴 硬性限定：第 3、4、5 棒", softRecText: "全守位通用", posRule: "ANY", orderRule: "345", desc: "常駐對手威變-6、平均擊球仰角+4°；以第3、4、5棒出賽時力準+6且對手變化額外-6(變化合計-12)。" },
+  { name: "適應型打者", cat: "HOF", type: "打者", baseScore: 52.6, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (左右開弓或左打佳)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手球威-6、自身全能力+6；右投進左打席/左投進右打席時力準選額外+7(合計+13)。" },
+  { name: "紀錄保持者 (打)", cat: "HOF", type: "打者", baseScore: 52.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (排位賽專武)", posRule: "ANY", orderRule: "ANY", desc: "常駐準確+6、對手威變-6；排名戰/錦標賽中力量+8、選球+9。零位置與棒次限制。" },
+  { name: "偉大存在", cat: "HOF", type: "打者", baseScore: 52.0, hardRuleText: "🔴 數值門檻：基本跑壘+守備 ≥ 165", softRecText: "🟢 全守位/棒次通用 (高跑守卡專用)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變-9；基本跑守合計達155時力準選+8，達165時額外+5(合計+13)。" },
+  { name: "王牌專家 (打)", cat: "HOF", type: "打者", baseScore: 51.4, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+7；對手投手OVR較高時力準選耐額外+12(合計+19)。" },
+  { name: "背靠背", cat: "HOF", type: "打者", baseScore: 50.8, hardRuleText: "", softRecText: "🟢 全位置通用 (戰術建議 2~5 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變控-7；前一位打者上壘力量+5；前一位打者開轟力準選額外+4。" },
+  { name: "扭轉局勢者", cat: "HOF", type: "打者", baseScore: 49.6, hardRuleText: "", softRecText: "🟢 全位置通用 (戰術建議 3~5 棒得點圈)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變速控-6；有跑者時準確選球+6；3壘有人力準耐+3。" },
+  { name: "持之以恆", cat: "HOF", type: "打者", baseScore: 48.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變-7；擊中好球力量+7；前一打席未上壘本次力準額外+5。" },
+  { name: "鐵馬", cat: "HOF", type: "打者", baseScore: 48.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (無腦常駐)", posRule: "ANY", orderRule: "ANY", desc: "所有能力值無條件常駐提升13。" },
+  { name: "打者化學效應", cat: "HOF", type: "打者", baseScore: 48.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (全隊光環必備1人)", posRule: "ANY", orderRule: "ANY", desc: "自身對手球威-5、全能力+5；所有登錄打者力量、準確常駐+1。" },
+  { name: "隱藏威脅", cat: "HOF", type: "打者", baseScore: 47.4, hardRuleText: "🔴 硬性限定：第 6、7、8、9 棒", softRecText: "全守位通用", posRule: "ANY", orderRule: "6789", desc: "常駐四圍+6，力準提準確2%；以第6、7、8、9棒出賽時對手球威、變化-6。" },
+  { name: "欺騙獵人", cat: "HOF", type: "打者", baseScore: 46.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (高選球打者佳)", posRule: "ANY", orderRule: "ANY", desc: "常駐力準+5、對手球威-5；選球高於對手控球時對手威變額外-5(球威合計-10)。" },
+  { name: "自由揮棒", cat: "HOF", type: "打者", baseScore: 44.5, hardRuleText: "", softRecText: "🟢 全位置通用 (戰術建議第 1 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐力準選+5，力量提準確2%；無人在壘時對手威變速-3。" },
+  { name: "第二次機會", cat: "HOF", type: "打者", baseScore: 43.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變速-6、準耐+6；前一打席未上壘本次全能力+4。" },
+  { name: "強力打擊者", cat: "HOF", type: "打者", baseScore: 42.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "對手威變速控-3；好球力量+5；拉打力量+10；推打準確+10。" },
+  { name: "強健之肩", cat: "HOF", type: "打者", baseScore: 41.2, hardRuleText: "🔴 硬性限定：LF / RF (左/右外野)", softRecText: "全棒次通用", posRule: "LF_RF", orderRule: "ANY", desc: "常駐力準+4、對手球威-4；配置於LF、RF位置時力準跑守額外+8(力準合計+12)。" },
+  { name: "心理戰", cat: "HOF", type: "打者", baseScore: 39.6, hardRuleText: "", softRecText: "🟢 全位置通用 (建議前段上壘棒次)", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+8；時機良好力準+8；作為跑者在壘時對手威變控-1。" },
+  { name: "慢熱型 (打)", cat: "HOF", type: "打者", baseScore: 38.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變速-6；第5局起力準耐+4；第7局起力準選額外+3。" },
+  { name: "速度&觸擊", cat: "HOF", type: "打者", baseScore: 32.0, hardRuleText: "🔴 硬性限定：第 1、2 棒 (⚠️降仰角3°)", softRecText: "小球腿哥專用，重砲嚴禁", posRule: "ANY", orderRule: "12", desc: "對手威變-5；以第1、2棒出賽時力準選跑+6；但平均擊球仰角降低3°！" },
+  { name: "聯盟霸主 (打)", cat: "HOF", type: "打者", baseScore: 14.5, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽不觸發自身加成", posRule: "ANY", orderRule: "ANY", desc: "對手威變速控-8；力準選+6與光環僅限聯賽模式生效！排位賽地雷。" },
+
+  // ---------------- 2. HOF 名人堂投手黑技 (24招) ----------------
+  { name: "疑惑的球種", cat: "HOF", type: "投手", baseScore: 58.6, hardRuleText: "", softRecText: "🟢 全投手定位通用 (SP/RP/CP皆封神)", posRule: "P_ALL", orderRule: "ANY", desc: "無條件降低對方打者所有能力值11！零門檻全遊戲投手第一神技。" },
+  { name: "主席", cat: "HOF", type: "投手", baseScore: 57.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位賽專武)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變+9；排名對戰/錦標賽中所有能力值增加12(威變合計暴增+21)。" },
+  { name: "前線王牌", cat: "HOF", type: "投手", baseScore: 56.0, hardRuleText: "🔴 硬性限定：第 1、2 號先發 (SP1~2)", softRecText: "3~5號先發與牛棚無效", posRule: "SP12", orderRule: "ANY", desc: "打者力準-5，威變提變化2%；配置為第1、2號先發時威變控速額外+6。" },
+  { name: "終極王者", cat: "HOF", type: "投手", baseScore: 55.5, hardRuleText: "🔴 局數限定：第 8 局之後額外爆發", softRecText: "🟢 強烈建議 CP 或 RP1~2 (先發不適用)", posRule: "RP_CP", orderRule: "ANY", desc: "常駐打者力準-6；第8局之後威變控+6且打者力準額外-5(力準合計暴扣-11)。" },
+  { name: "300勝投手", cat: "HOF", type: "投手", baseScore: 55.2, hardRuleText: "🔴 硬性限定：第 1 號先發 (SP1)", softRecText: "2~5號先發與牛棚無效", posRule: "SP1", orderRule: "ANY", desc: "威變+3；以第1先發登板至第7局打者力準-9，平手或領先額外-3(合計-12)。" },
+  { name: "BIG UNIT", cat: "HOF", type: "投手", baseScore: 55.0, hardRuleText: "🔴 硬性限定：先發 (SP) 且需為左投", softRecText: "牛棚後援無效", posRule: "SP_ALL", orderRule: "ANY", desc: "全能力+7；以左投先發上場時打者力準選耐-7，遇左打再-3(合計-10)。" },
+  { name: "消防員", cat: "HOF", type: "投手", baseScore: 54.8, hardRuleText: "", softRecText: "🟢 全通用 (戰術強烈建議 RP/CP 牛棚拆彈)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變控速+6，威變提變化2%；上場前6位打者期間打者力準-6。鎖2局神技。" },
+  { name: "信賴先發", cat: "HOF", type: "投手", baseScore: 53.4, hardRuleText: "🔴 硬性限定：第 3、4 號先發 (SP3~4)", softRecText: "1~2號、5號先發與牛棚無效", posRule: "SP34", orderRule: "ANY", desc: "打者力準-6；配置為第3、4號先發時威變+6且打者準確額外-6(準確合計-12)。" },
+  { name: "王牌專家 (投)", cat: "HOF", type: "投手", baseScore: 53.0, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+7；對手打者OVR較高時威速變控額外+12(合計+19)。" },
+  { name: "紀錄保持者 (投)", cat: "HOF", type: "投手", baseScore: 52.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位賽專武)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐變化+6、對手力準-6；排名戰/錦標賽球威+8、控球+9。" },
+  { name: "蝴蝶球大師", cat: "HOF", type: "投手", baseScore: 52.2, hardRuleText: "", softRecText: "🟢 全定位通用 (多變化球種/蝴蝶球投手佳)", posRule: "P_ALL", orderRule: "ANY", desc: "球威-4、變化+14；投變化球時打者力準選-9(蝴蝶球準確再-3)。" },
+  { name: "投手化學效應", cat: "HOF", type: "投手", baseScore: 51.8, hardRuleText: "", softRecText: "🟢 全定位通用 (全隊光環必備1人，建議RP3~5)", posRule: "P_ALL", orderRule: "ANY", desc: "自身對手力量-5、全能力+5；全隊登錄投手球威、變化常駐+1。" },
+  { name: "主力", cat: "HOF", type: "投手", baseScore: 51.2, hardRuleText: "🔴 硬性限定：先發投手 (SP1~SP5)", softRecText: "牛棚後援無效", posRule: "SP_ALL", orderRule: "ANY", desc: "對手力準-4，威變提持久力4%；以先發投手上場時速變控額外+6。" },
+  { name: "火星塞", cat: "HOF", type: "投手", baseScore: 50.5, hardRuleText: "", softRecText: "🟢 全投手定位通用 (高三振投手佳)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準-4、球威提變化2%；前一名打者被三振時下一棒打者力準額外-7(合計-11)。" },
+  { name: "領先守護者", cat: "HOF", type: "投手", baseScore: 49.8, hardRuleText: "", softRecText: "🟢 全定位通用 (建議勝利組 RP1~2 / CP / SP)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準力-4；上場時若為平手或領先(先發0:0開局亦生效)，威變+5且打者準確額外-5(合計-9)。" },
+  { name: "欺騙指揮官", cat: "HOF", type: "投手", baseScore: 48.6, hardRuleText: "", softRecText: "🟢 全投手定位通用 (高控球投手佳)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變+5、對手力量-5；控球高於打者選球時對手力準額外-5(力量合計-10)。" },
+  { name: "後段打線支配者", cat: "HOF", type: "投手", baseScore: 47.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準選耐-7；面對6~9棒時威變控+4。" },
+  { name: "脫逃藝術家", cat: "HOF", type: "投手", baseScore: 46.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準選耐-6；有跑者時變控+6；3壘有人威變速+3。" },
+  { name: "MOOSE", cat: "HOF", type: "投手", baseScore: 45.0, hardRuleText: "", softRecText: "🟢 全定位通用 (⚠️排位進攻為客場吃不到-12)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變+7；主場比賽時打者力準-12。注意排位主動進攻為客隊，僅防守戰主場生效。" },
+  { name: "解鈴還須繫鈴人", cat: "HOF", type: "投手", baseScore: 44.5, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐變速+6、打者力準耐-6；前一位打者上壘時全能力+4。" },
+  { name: "輕鬆局數", cat: "HOF", type: "投手", baseScore: 43.2, hardRuleText: "", softRecText: "🟢 全投手定位通用 (先發佳)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變控+5、球威提變化2%；無人在壘時打者力準耐-4。" },
+  { name: "不屈不撓", cat: "HOF", type: "投手", baseScore: 42.0, hardRuleText: "", softRecText: "🟢 全定位通用 (建議 RP 落後反攻光環)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+6；領先打者力準-4；平手或落後時我方全隊打者力準+7。" },
+  { name: "慢熱型 (投)", cat: "HOF", type: "投手", baseScore: 39.5, hardRuleText: "🔴 局數限定：第 5 局起加能力", softRecText: "🟢 建議先發 SP 或後援", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準耐-6；第5局起威變速+4；第7局起威變控+3。" },
+  { name: "聯盟霸主 (投)", cat: "HOF", type: "投手", baseScore: 14.8, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽不觸發自身加成", posRule: "P_ALL", orderRule: "ANY", desc: "打者四圍-8；但威變控+6與光環僅限聯賽生效！排位賽地雷。" },
+
+  // ---------------- 3. Moment 專屬綠技 - 打者 (21招) ----------------
+  { name: "進攻領袖", cat: "Moment", type: "打者", baseScore: 50.1, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (建議 1~3 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變-10；前4打席力準選耐等效+9。Moment打者第一神技。" },
+  { name: "BORN TO HIT", cat: "Moment", type: "打者", baseScore: 49.4, hardRuleText: "🔴 硬性限定：DH (指定打擊)", softRecText: "非DH損失額外+6", posRule: "DH_ONLY", orderRule: "ANY", desc: "力準>跑守時力準選+12；配置於DH時額外力準選+6(合計+18)。" },
+  { name: "Hot Start (打)", cat: "Moment", type: "打者", baseScore: 48.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (建議 1~3 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手投手全能力-6；前2打席四圍+6。" },
+  { name: "安打製造機", cat: "Moment", type: "打者", baseScore: 46.8, hardRuleText: "🔴 硬性限定：第 1、2、6、7、8、9 棒", softRecText: "嚴禁放 3~5 棒", posRule: "ANY", orderRule: "126789", desc: "對手威變-4；限1/2/6/7/8/9棒全能力+6。放3~5棒吃不到+6！" },
+  { name: "季後賽英雄 (打)", cat: "Moment", type: "打者", baseScore: 45.9, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+3；排位/即時力準耐+6；遇高OVR強投對手威變-4。" },
+  { name: "核心主導者", cat: "Moment", type: "打者", baseScore: 45.4, hardRuleText: "🔴 硬性限定：C / 2B / SS / CF (中線守位)", softRecText: "角落守位與DH無效", posRule: "MID_ONLY", orderRule: "ANY", desc: "對手威變-6；限捕手/二壘/游擊/中外野力準+5、跑守+10。" },
+  { name: "核心球員 (打)", cat: "Moment", type: "打者", baseScore: 44.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變控-5；對方球隊OVR較高時力準選+5。" },
+  { name: "FREE AGENT (打)", cat: "Moment", type: "打者", baseScore: 42.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (排位客場100%扣防)", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+5；排位賽主動進攻必為客場，100%觸發對手威變體-5！" },
+  { name: "旋風主角 (打)", cat: "Moment", type: "打者", baseScore: 39.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變控-4；對手OVR較高時全能力+5。" },
+  { name: "Standout (打)", cat: "Moment", type: "打者", baseScore: 38.6, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (排位不觸發扣威變)", posRule: "ANY", orderRule: "ANY", desc: "常駐力準選+7，前2打席額外+5；注意扣威變僅限聯賽/即時對戰。" },
+  { name: "強力打者", cat: "Moment", type: "打者", baseScore: 37.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐力準選+6；好球打擊時力量額外+6(合計+12)。" },
+  { name: "孤星 (打)", cat: "Moment", type: "打者", baseScore: 34.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+4；平手或落後時力準選+10。" },
+  { name: "全能型球員", cat: "Moment", type: "打者", baseScore: 31.4, hardRuleText: "🔴 硬性限定：非 DH 之守備位置", softRecText: "放 DH 損失額外力準+5", posRule: "NO_DH", orderRule: "ANY", desc: "常駐全能力+5；非DH位置出賽時力準額外+5(合計+10)。" },
+  { name: "指揮官", cat: "Moment", type: "打者", baseScore: 29.8, hardRuleText: "🔴 硬性限定：C (捕手專屬光環)", softRecText: "非捕手無投手光環", posRule: "C_ONLY", orderRule: "ANY", desc: "自身全能力+5；以捕手出賽時登板投手變化+1、球威+2。" },
+  { name: "BIG BATS", cat: "Moment", type: "打者", baseScore: 27.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "力準+3；對手OVR低力準+5；時機良好力+10準+5。" },
+  { name: "領導力", cat: "Moment", type: "打者", baseScore: 25.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "對手威變-2；自身力準耐+6；全隊打者守備+1。" },
+  { name: "傳奇球員 (打)", cat: "Moment", type: "打者", baseScore: 22.0, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐四圍+5；排位客場吃不到主場+1。" },
+  { name: "資深球員 (打)", cat: "Moment", type: "打者", baseScore: 18.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐四圍+4；領先時額外+2。" },
+  { name: "2025年度表現 (打)", cat: "Moment", type: "打者", baseScore: 17.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+7；壘上有人對手威變-3。" },
+  { name: "FLASHBACK (打)", cat: "Moment", type: "打者", baseScore: 16.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力+2；有跑者力準耐+3，每多1人再+3。" },
+  { name: "關鍵球員 (打)", cat: "Moment", type: "打者", baseScore: 12.0, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽地雷", posRule: "ANY", orderRule: "ANY", desc: "全能力+6；額外+8僅限聯賽模式生效，排位賽必洗地雷。" },
+
+  // ---------------- 4. Moment 專屬綠技 - 投手 (23招) ----------------
+  { name: "強力投手", cat: "Moment", type: "投手", baseScore: 54.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (SP/RP/CP皆封神)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變+10；球速高於打者忍耐時打者力準選-10。Moment投手第一神技。" },
+  { name: "大師", cat: "Moment", type: "投手", baseScore: 54.2, hardRuleText: "🔴 硬性限定：先發投手 (SP1~SP5)", softRecText: "牛棚後援局數短不適用", posRule: "SP_ALL", orderRule: "ANY", desc: "對手打者全能力-11；每累積1出局威變+1(最高+12)。先發大魔王。" },
+  { name: "最後防線", cat: "Moment", type: "投手", baseScore: 50.6, hardRuleText: "🔴 硬性限定：終結者 (CP)", softRecText: "SP 與中繼 RP 無法觸發第9局扣防", posRule: "CP_ONLY", orderRule: "ANY", desc: "常駐速變威控+9；作為終結者第9局登板對手力準選-9。CP畢業首選。" },
+  { name: "Hot Start (投)", cat: "Moment", type: "投手", baseScore: 49.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (SP/RP/CP皆強)", posRule: "P_ALL", orderRule: "ANY", desc: "對手打者全能力-6；上場前7位打者威變速控+6。" },
+  { name: "牛棚主力", cat: "Moment", type: "投手", baseScore: 48.6, hardRuleText: "🔴 硬性限定：後援投手 (RP / CP)", softRecText: "先發 SP 無法觸發", posRule: "RP_CP", orderRule: "ANY", desc: "常駐威控變+6；前3打者威變+8；平手或領先對手力準選-9。" },
+  { name: "LOCKDOWN", cat: "Moment", type: "投手", baseScore: 47.5, hardRuleText: "🔴 硬性限定：終結者 (CP)", softRecText: "放 RP 或 SP 光環與扣防皆無效", posRule: "CP_ONLY", orderRule: "ANY", desc: "配置於CP第7局後對手四圍-2(全場光環)；登板對手力準選額外-7(合計-9)。" },
+  { name: "季後賽英雄 (投)", cat: "Moment", type: "投手", baseScore: 46.5, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+3；排位/即時威變控+6；遇高OVR打者力準-4。" },
+  { name: "關鍵主力", cat: "Moment", type: "投手", baseScore: 45.2, hardRuleText: "🔴 硬性限定：先發投手 (SP1~SP5)", softRecText: "後援 RP/CP 無效", posRule: "SP_ALL", orderRule: "ANY", desc: "常駐威變守+6；先發登板至第7局對手力準選-3。" },
+  { name: "核心球員 (投)", cat: "Moment", type: "投手", baseScore: 44.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準選-5；對方球隊OVR較高時威變控+5。" },
+  { name: "Closer", cat: "Moment", type: "投手", baseScore: 44.6, hardRuleText: "🔴 硬性限定：終結者 (CP)", softRecText: "先發與中繼 RP 無效", posRule: "CP_ONLY", orderRule: "ANY", desc: "常駐威變速+4；作為CP於第9局登板對手力準-6。" },
+  { name: "FREE AGENT (投)", cat: "Moment", type: "投手", baseScore: 42.5, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位客場100%扣防)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+5；排位賽主動進攻必為客場，100%觸發打者力準耐-5！" },
+  { name: "首席佈局", cat: "Moment", type: "投手", baseScore: 41.8, hardRuleText: "🔴 硬性限定：中繼投手 (RP1~RP5)", softRecText: "先發 SP 與終結者 CP 皆無效", posRule: "RP_ONLY", orderRule: "ANY", desc: "常駐威變控+5；以中繼投手平手或領先上場時打者力準-5。" },
+  { name: "旋風主角 (投)", cat: "Moment", type: "投手", baseScore: 40.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準力耐-4；對手OVR較高時全能力+5。" },
+  { name: "牛棚王牌", cat: "Moment", type: "投手", baseScore: 39.5, hardRuleText: "🔴 硬性限定：後援投手 (RP / CP)", softRecText: "先發 SP 無效", posRule: "RP_CP", orderRule: "ANY", desc: "常駐速威變+6；壘上有人打者力準耐-5；遇強敵威變控+3。" },
+  { name: "孤星 (投)", cat: "Moment", type: "投手", baseScore: 38.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+4；平手或落後時變威控+10。" },
+  { name: "搖擺人", cat: "Moment", type: "投手", baseScore: 38.5, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準力選-4；平手/領先威變速+5；落後威變控+6。" },
+  { name: "Standout (投)", cat: "Moment", type: "投手", baseScore: 37.8, hardRuleText: "", softRecText: "🟢 全定位通用 (排位賽不觸發扣力準)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變控+7，前9打者額外+5；注意排位賽不觸發扣力準。" },
+  { name: "精英", cat: "Moment", type: "投手", baseScore: 32.4, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "投手所有能力值常駐+6。" },
+  { name: "傳奇球員 (投)", cat: "Moment", type: "投手", baseScore: 25.0, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變控體+5；排位客場吃不到主場+1。" },
+  { name: "2025年度表現 (投)", cat: "Moment", type: "投手", baseScore: 24.5, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力+7；登板後我方打者力準+2。" },
+  { name: "資深球員 (投)", cat: "Moment", type: "投手", baseScore: 19.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威速變控+4；領先時額外+2。" },
+  { name: "FLASHBACK (投)", cat: "Moment", type: "投手", baseScore: 15.8, hardRuleText: "🔴 硬性限定：後援 (RP / CP)", softRecText: "無人時白板", posRule: "RP_CP", orderRule: "ANY", desc: "常駐全能力+2；有跑者速變威+3，每多1人再+3。" },
+  { name: "關鍵球員 (投)", cat: "Moment", type: "投手", baseScore: 12.0, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽必洗地雷", posRule: "P_ALL", orderRule: "ANY", desc: "全能力+6；額外+8僅限聯賽生效，排位必洗地雷。" },
+
+  // ---------------- 5. 黃金段位技能 (Gold) - 打者 (30招) ----------------
+  { name: "中央打線", cat: "Gold", type: "打者", baseScore: 27.5, hardRuleText: "🔴 硬性限定：第 3、4、5 棒", softRecText: "全守位通用", posRule: "ANY", orderRule: "345", desc: "耐跑守+6；配置強打(3、4、5棒)時對手投手球威、變化、控球各-6！金技最強Debuff。" },
+  { name: "中心打線", cat: "Gold", type: "打者", baseScore: 26.8, hardRuleText: "🔴 硬性限定：第 3、4、5 棒", softRecText: "全守位通用 (仰角+3°全棒次有效)", posRule: "ANY", orderRule: "345", desc: "平均擊球仰角永久+3°；配置於3、4、5棒時力量、準確額外+5。" },
+  { name: "客場戰神 (打)", cat: "Gold", type: "打者", baseScore: 25.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (排位客場100%觸發)", posRule: "ANY", orderRule: "ANY", desc: "常駐力準耐+5；排位賽玩家必為客隊，100%全程觸發對手威變速-2！金技T0萬用神技。" },
+  { name: "超速節奏 (打)", cat: "Gold", type: "打者", baseScore: 25.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (建議 1~3 棒)", posRule: "ANY", orderRule: "ANY", desc: "常駐對手球威-5；第1打席力準+8、第2打席+6、第3打席+4。" },
+  { name: "積極打者", cat: "Gold", type: "打者", baseScore: 24.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手球威-6；球數0-0、0-1、1-0時力量、準確+4。" },
+  { name: "攻守俱佳", cat: "Gold", type: "打者", baseScore: 24.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手球威-5；力準提升相當於準確+跑壘的1%。" },
+  { name: "凝聚力 (打)", cat: "Gold", type: "打者", baseScore: 23.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手變化-6；力準選提升隊伍特別組合分數的1%。" },
+  { name: "打擊機器", cat: "Gold", type: "打者", baseScore: 23.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (無腦萬金油)", posRule: "ANY", orderRule: "ANY", desc: "力量、準確、選球無條件常駐+6。" },
+  { name: "五項全能球員", cat: "Gold", type: "打者", baseScore: 23.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (高跑守球員佳)", posRule: "ANY", orderRule: "ANY", desc: "跑守+6；力準提升相當於跑壘+守備的2%。" },
+  { name: "挑戰者 (打)", cat: "Gold", type: "打者", baseScore: 22.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (排位賽專武)", posRule: "ANY", orderRule: "ANY", desc: "準跑+5；排名戰/錦標賽/即時對戰中力量、選球+6。" },
+  { name: "全方位壓迫 (打)", cat: "Gold", type: "打者", baseScore: 21.6, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手威變控-3；對手特別組合分數較高時力準選+5。" },
+  { name: "向上揮棒", cat: "Gold", type: "打者", baseScore: 20.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (低仰角打者救星)", posRule: "ANY", orderRule: "ANY", desc: "打擊低球時力量+5，且擊球仰角往長打方向修正7度。" },
+  { name: "氣勢 (打)", cat: "Gold", type: "打者", baseScore: 19.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "對手投手OVR較高時，力準選耐全部+7。" },
+  { name: "排名競爭 (打)", cat: "Gold", type: "打者", baseScore: 19.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐力準耐+5；排位賽/即時對戰力量、耐力、守備額外+1(力量合計+6)。" },
+  { name: "掌握主導權 (打)", cat: "Gold", type: "打者", baseScore: 19.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "準選+5；對手組合分數較高時對手球威、變化-4。" },
+  { name: "疊加 (打)", cat: "Gold", type: "打者", baseScore: 18.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐對手變化-3；逐打席力準選提升(+2/+4/+6/+8/+10)。" },
+  { name: "常勝軍 (打)", cat: "Gold", type: "打者", baseScore: 18.6, hardRuleText: "", softRecText: "🟢 全位置通用 (建議 3~5 棒得點圈)", posRule: "ANY", orderRule: "ANY", desc: "常駐力耐+5；有跑者時準選+3/+6/+9。" },
+  { name: "捕手引導", cat: "Gold", type: "打者", baseScore: 18.2, hardRuleText: "🔴 硬性限定：C (捕手專屬光環)", softRecText: "非捕手無團隊光環", posRule: "C_ONLY", orderRule: "ANY", desc: "準耐+5；配置於捕手時登板投手速變控+1。" },
+  { name: "下位打線", cat: "Gold", type: "打者", baseScore: 17.5, hardRuleText: "🔴 硬性限定：第 6、7、8、9 棒", softRecText: "放 1~5 棒無扣防效果", posRule: "ANY", orderRule: "6789", desc: "準跑+6；配置於6、7、8、9棒時敵隊投手球威、控球-5。" },
+  { name: "最佳球員 (打)", cat: "Gold", type: "打者", baseScore: 16.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "力準選耐+4，跑守+5。" },
+  { name: "逆轉打者", cat: "Gold", type: "打者", baseScore: 16.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "常駐力準耐+4；第6局後平手或落後時對手球威-6。" },
+  { name: "下半場專注力", cat: "Gold", type: "打者", baseScore: 16.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "耐跑守+6；第7局之後對手投手威變控-6。" },
+  { name: "英雄 (打)", cat: "Gold", type: "打者", baseScore: 15.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "力準選耐+1；對方球隊OVR較高時額外+5(合計+6)。" },
+  { name: "主場優勢 (打)", cat: "Gold", type: "打者", baseScore: 15.5, hardRuleText: "", softRecText: "🟢 全位置通用 (排位客場僅+5)", posRule: "ANY", orderRule: "ANY", desc: "常駐力準耐+5；排位進攻為客場吃不到主場+1。" },
+  { name: "挑戰精神 (打)", cat: "Gold", type: "打者", baseScore: 15.4, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "全能力+5；對手等級較高時對手全能力-1。" },
+  { name: "兩好球打者", cat: "Gold", type: "打者", baseScore: 15.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "全能力+2；2好球時力選合計+8、準確+7。" },
+  { name: "守備專家", cat: "Gold", type: "打者", baseScore: 14.8, hardRuleText: "🔴 硬性限定：第 1、2、6、7、8、9 棒", softRecText: "放 3~5 棒無進攻加成", posRule: "ANY", orderRule: "126789", desc: "守跑+7；以1、2、6、7、8、9打序出戰時準確、選球、耐力+6。" },
+  { name: "時機", cat: "Gold", type: "打者", baseScore: 14.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "準確及耐力+8。" },
+  { name: "關鍵打者", cat: "Gold", type: "打者", baseScore: 13.8, hardRuleText: "", softRecText: "🟢 全位置通用 (建議 3~5 棒)", posRule: "ANY", orderRule: "ANY", desc: "壘上1/2/3名跑者時力量+5/+10/+15。" },
+  { name: "勝利的吶喊 (打)", cat: "Gold", type: "打者", baseScore: 13.0, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "準耐+5；領先時力選+7。" },
+  { name: "一棒打者", cat: "Gold", type: "打者", baseScore: 12.5, hardRuleText: "🔴 硬性限定：第 1、2 棒", softRecText: "3~9 棒損失準耐+3", posRule: "ANY", orderRule: "12", desc: "選跑+7；配置於1、2棒時準耐+3。" },
+  { name: "特別代打", cat: "Gold", type: "打者", baseScore: 11.5, hardRuleText: "🔴 硬性限定：板凳代打 (先發無+9)", softRecText: "先發球員嚴禁使用", posRule: "PH_ONLY", orderRule: "ANY", desc: "對手變控-5；代打第1打席力準選+9。先發上場完全吃不到+9！" },
+  { name: "專注 (打)", cat: "Gold", type: "打者", baseScore: 11.5, hardRuleText: "", softRecText: "🟢 全通用 (⚠️強投時扣自身力量4)", posRule: "ANY", orderRule: "ANY", desc: "力準耐+5；對手球威高於自身力量時準確+8但力量-4！" },
+  { name: "打擊專家", cat: "Gold", type: "打者", baseScore: 10.5, hardRuleText: "", softRecText: "🟢 全通用 (⚠️扣力量3且降仰角3°！重砲禁裝)", posRule: "ANY", orderRule: "ANY", desc: "對手變控速-6、準確+7；但力量-3且擊球仰角降低3度！重砲手大地雷。" },
+  { name: "接觸型打者", cat: "Gold", type: "打者", baseScore: 10.0, hardRuleText: "🔴 硬性限定：第 1、2 棒 (⚠️降仰角3°)", softRecText: "重砲嚴禁", posRule: "ANY", orderRule: "12", desc: "對手威變控-3；排1、2棒時準選跑+4但擊球仰角降低3度！" },
+  { name: "高球打者", cat: "Gold", type: "打者", baseScore: 9.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "打擊高球時力量+8。" },
+  { name: "聯賽強者 (打)", cat: "Gold", type: "打者", baseScore: 8.5, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽廢技", posRule: "ANY", orderRule: "ANY", desc: "跑守+5；額外+8僅限聯賽生效，排位廢技。" },
+  { name: "飛毛腿", cat: "Gold", type: "打者", baseScore: 1.5, hardRuleText: "", softRecText: "必洗廢技", posRule: "ANY", orderRule: "ANY", desc: "跑壘+7，盜壘時跑壘+7。對打擊0幫助的金技最大地雷。" },
+
+  // ---------------- 6. 黃金段位技能 (Gold) - 投手 (28招，已下修守護神/必勝組等虛高技) ----------------
+  { name: "雙重終結者", cat: "Gold", type: "投手", baseScore: 27.2, hardRuleText: "🔴 硬性限定：中繼 (RP) 或 終結者 (CP)", softRecText: "先發 SP 無效", posRule: "RP_CP", orderRule: "ANY", desc: "常駐威變+4；以中繼或終結者上場時打者力量、準確、選球各-6！後援第一神技。" },
+  { name: "質量開始", cat: "Gold", type: "投手", baseScore: 26.4, hardRuleText: "🔴 硬性限定：先發投手 (SP1~SP5)", softRecText: "後援 RP/CP 無效", posRule: "SP_ALL", orderRule: "ANY", desc: "速控守+6；作為先發上場至第6局為止打者力量、準確、選球各-6！先發第一神技。" },
+  { name: "王牌雙投", cat: "Gold", type: "投手", baseScore: 25.5, hardRuleText: "🔴 硬性限定：第 1、2 號先發 (SP1~2)", softRecText: "3~5號先發與後援無效", posRule: "SP12", orderRule: "ANY", desc: "常駐威控+6；配置為1、2號先發時打者準確、耐力減少5。" },
+  { name: "客場戰神 (投)", cat: "Gold", type: "投手", baseScore: 24.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位客場100%觸發)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變體+5；排位賽玩家必為客隊，100%全程觸發打者力準跑-2！全定位T0好技。" },
+  { name: "超速節奏 (投)", cat: "Gold", type: "投手", baseScore: 24.5, hardRuleText: "", softRecText: "🟢 全定位通用 (強烈建議先發 SP1~SP5)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力量-5；第1~3局威變+7、第4~6局+5、第7~9局+2。" },
+  { name: "精準控球", cat: "Gold", type: "投手", baseScore: 24.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力量-5；威變提升相當於變化+控球的1%。" },
+  { name: "王牌", cat: "Gold", type: "投手", baseScore: 23.5, hardRuleText: "", softRecText: "🟢 全投手定位通用 (100%常駐萬金油)", posRule: "P_ALL", orderRule: "ANY", desc: "投手所有能力值無條件常駐+5。" },
+  { name: "凝聚力 (投)", cat: "Gold", type: "投手", baseScore: 23.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準確-6；威變控提升隊伍特別組合分數的1%。" },
+  { name: "刻苦訓練", cat: "Gold", type: "投手", baseScore: 22.5, hardRuleText: "", softRecText: "🟢 全定位通用 (高持久力先發 SP 收益最高)", posRule: "P_ALL", orderRule: "ANY", desc: "球速+5、變威控+1；變威控額外提升持久力的5%(先發約+5)。" },
+  { name: "專精", cat: "Gold", type: "投手", baseScore: 21.8, hardRuleText: "", softRecText: "🟢 全投手定位通用 (中繼加控球+7最佳)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威變+6；先發體力+7 / 中繼控球+7 / 終結者球速+7。" },
+  { name: "全方位壓迫 (投)", cat: "Gold", type: "投手", baseScore: 21.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準選-3；對手特別組合分數較高時威變控+5。" },
+  { name: "打線支援", cat: "Gold", type: "投手", baseScore: 21.5, hardRuleText: "", softRecText: "🟢 全定位通用 (先發 SP 在場局數長效益最高)", posRule: "P_ALL", orderRule: "ANY", desc: "投手上場後，我方進攻時全隊打者力量及跑壘常駐+5。" },
+  { name: "挑戰者 (投)", cat: "Gold", type: "投手", baseScore: 21.2, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位賽專武)", posRule: "P_ALL", orderRule: "ANY", desc: "變速+5；排位/錦標賽/即時中球威及控球+6。" },
+  { name: "排名競爭 (投)", cat: "Gold", type: "投手", baseScore: 20.5, hardRuleText: "", softRecText: "🟢 全投手定位通用 (排位賽專武)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威控變+5；排位/即時中威變守額外+1(威變合計+6)。" },
+  { name: "追擊區", cat: "Gold", type: "投手", baseScore: 20.5, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐變控+7；打者Check收棒率-7%且力準-2。" },
+  { name: "獨一無二", cat: "Gold", type: "投手", baseScore: 20.2, hardRuleText: "🔴 硬性限定：第 1 號先發 (SP1)", softRecText: "2~5號先發與後援無+4", posRule: "SP1", orderRule: "ANY", desc: "常駐打者力準選耐-3；配置為第1號先發時威變速控+4。" },
+  { name: "氣勢 (投)", cat: "Gold", type: "投手", baseScore: 19.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "對手打者OVR較高時，威速變控+7。" },
+  { name: "疊加 (投)", cat: "Gold", type: "投手", baseScore: 19.2, hardRuleText: "", softRecText: "🟢 全投手定位通用 (後段局數威變+7)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準確-5；第1~3局威變+2、第4~6局+5、第7~9局+7。" },
+  { name: "掌握主導權 (投)", cat: "Gold", type: "投手", baseScore: 18.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "變控+5；對手組合分數較高時打者力準-4。" },
+  { name: "無法觸及", cat: "Gold", type: "投手", baseScore: 18.6, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "球速、變化常駐+8。" },
+  { name: "決勝球", cat: "Gold", type: "投手", baseScore: 18.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "威變+3；2好球後威變控額外+3且所有球種等級提升1階(最高S級)。" },
+  { name: "火熱之手", cat: "Gold", type: "投手", baseScore: 18.2, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者準選-5；前一位打者出局時威變+2。" },
+  { name: "藝術家", cat: "Gold", type: "投手", baseScore: 18.0, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "控球及變化常駐+8。" },
+  { name: "一人投手", cat: "Gold", type: "投手", baseScore: 17.2, hardRuleText: "🔴 硬性限定：後援投手 (RP / CP)", softRecText: "⚠️+9僅對首名打者有效，常駐僅準選-5", posRule: "RP_CP", orderRule: "ANY", desc: "常駐打者準選-5；替補上場面對第1個打者時威控變+9(第2名打者起無+9)。" },
+  { name: "常勝軍 (投)", cat: "Gold", type: "投手", baseScore: 16.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威速+5；有跑者時變控+3/+6/+9。" },
+  { name: "專注 (投)", cat: "Gold", type: "投手", baseScore: 16.6, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "常駐打者力準-3；有跑者時威變+5。" },
+  { name: "英雄 (投)", cat: "Gold", type: "投手", baseScore: 15.8, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "威速變控+1；對手球隊OVR高時額外+5。" },
+  { name: "主場優勢 (投)", cat: "Gold", type: "投手", baseScore: 15.5, hardRuleText: "", softRecText: "🟢 全定位通用 (排位客場僅+5)", posRule: "P_ALL", orderRule: "ANY", desc: "威變體+5；排位進攻為客場吃不到主場+1。" },
+  { name: "最佳球員 (投)", cat: "Gold", type: "投手", baseScore: 15.4, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "威變速控+4，體守+5。" },
+  { name: "挑戰精神 (投)", cat: "Gold", type: "投手", baseScore: 15.4, hardRuleText: "", softRecText: "🟢 全投手定位通用", posRule: "P_ALL", orderRule: "ANY", desc: "全能力+5；對手等級較高時全能力-1。" },
+  { name: "好的開始", cat: "Gold", type: "投手", baseScore: 14.5, hardRuleText: "🔴 硬性限定：先發投手 (SP1~SP5)", softRecText: "⚠️扣防僅維持前2局，第3局起偏弱", posRule: "SP_ALL", orderRule: "ANY", desc: "速威+5；先發前2局打者準選耐-6(第3局起失去扣防效果)。" },
+  { name: "勝利的吶喊 (投)", cat: "Gold", type: "投手", baseScore: 13.8, hardRuleText: "", softRecText: "🟢 全定位通用 (平手/落後無球威加成)", posRule: "P_ALL", orderRule: "ANY", desc: "變控+5；贏球時威速+7。" },
+  { name: "守護神", cat: "Gold", type: "投手", baseScore: 13.6, hardRuleText: "🔴 局數限定：第 8 局後上場才觸發", softRecText: "⚠️社群避雷：無常駐且無扣防，6~7局提早上場完全白板", posRule: "RP_CP", orderRule: "ANY", desc: "8局後上場時速威變控+6。⚠️缺點：常駐為0且無扣防，中繼若於6~7局提早登板完全0作用！" },
+  { name: "關鍵投手", cat: "Gold", type: "投手", baseScore: 13.5, hardRuleText: "", softRecText: "🟢 全定位通用 (無人時白板)", posRule: "P_ALL", orderRule: "ANY", desc: "壘上有人時變控+5/+10/+15。" },
+  { name: "必勝組", cat: "Gold", type: "投手", baseScore: 13.2, hardRuleText: "🔴 硬性限定：中繼投手 (RP1~RP5)", softRecText: "⚠️社群避雷：常駐0威0變，扣防僅限領先/平手且僅3名打者", posRule: "RP_ONLY", orderRule: "ANY", desc: "速控守+6(常駐0球威0變化！)；中繼平手或領先時僅3名打者期間力準選-6，第4名打者起或落後時完全白板！" },
+  { name: "新秀", cat: "Gold", type: "投手", baseScore: 12.8, hardRuleText: "🔴 硬性限定：3~5號先發 或 3~5號中繼", softRecText: "⚠️1、2號先發/中繼與CP無效，且僅維持4打者", posRule: "SP345_RP345", orderRule: "ANY", desc: "變速+6；配置於3/4/5先發或3/4/5中繼時，僅前4名打者期間打者力量耐力-5。" },
+  { name: "打斷氣勢", cat: "Gold", type: "投手", baseScore: 10.8, hardRuleText: "", softRecText: "⚠️避雷：無常駐能力，僅維持3名打者", posRule: "RP_CP", orderRule: "ANY", desc: "上場後僅對付前3位打者期間速變威控+6，第4位打者起完全0加成。" },
+  { name: "聯賽強者 (投)", cat: "Gold", type: "投手", baseScore: 7.5, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "排位賽廢技", posRule: "P_ALL", orderRule: "ANY", desc: "體守+5；額外+8僅限聯賽生效，排位廢技。" },
+
+  // ---------------- 7. 白銀/青銅/鋼鐵 普技 (29招) ----------------
+  { name: "右打專家", cat: "Silver", type: "投手", baseScore: 13.2, hardRuleText: "", softRecText: "🟢 全投手通用 (銀技第一神技)", posRule: "P_ALL", orderRule: "ANY", desc: "面對右打者時打者力準-5。" },
+  { name: "調整節奏", cat: "Silver", type: "投手", baseScore: 12.8, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "對付3、4、5棒打者時速威變控+5。" },
+  { name: "首選右投", cat: "Silver", type: "打者", baseScore: 11.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (銀技第一神技)", posRule: "ANY", orderRule: "ANY", desc: "遇到右投手時力量、準確+5。" },
+  { name: "危機處理", cat: "Silver", type: "投手", baseScore: 11.5, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "跑者進2壘以上時打者力準-6。" },
+  { name: "打點機器", cat: "Silver", type: "打者", baseScore: 11.2, hardRuleText: "", softRecText: "🟢 全位置通用 (建議 3~5 棒)", posRule: "ANY", orderRule: "ANY", desc: "跑者進2壘以上時力量、準確+6。" },
+  { name: "打線串聯", cat: "Silver", type: "打者", baseScore: 10.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "前一位打者上壘時全能力+5。" },
+  { name: "左打專家", cat: "Silver", type: "投手", baseScore: 9.5, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "面對左打者時打者力準-5。" },
+  { name: "平常心", cat: "Bronze", type: "投手", baseScore: 9.5, hardRuleText: "", softRecText: "🟢 全投手通用 (銅技第一常駐)", posRule: "P_ALL", orderRule: "ANY", desc: "無條件常駐球威+5、控球+3。" },
+  { name: "首選左投", cat: "Silver", type: "打者", baseScore: 8.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "遇到左投手時力量、準確+5。" },
+  { name: "最後出局數", cat: "Bronze", type: "投手", baseScore: 8.2, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "2出局時對手打者力量-6。" },
+  { name: "甜蜜點", cat: "Bronze", type: "打者", baseScore: 7.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "打擊時機佳時力量+7。" },
+  { name: "起步優勢", cat: "Bronze", type: "投手", baseScore: 7.8, hardRuleText: "", softRecText: "🟢 全投手通用 (建議短中繼)", posRule: "P_ALL", orderRule: "ANY", desc: "上場遇到第1個打者力準耐選-5。" },
+  { name: "開路先鋒", cat: "Bronze", type: "打者", baseScore: 7.2, hardRuleText: "", softRecText: "🟢 全位置通用 (建議第 1 棒)", posRule: "ANY", orderRule: "ANY", desc: "沒有跑者時準確、選球、耐力+5。" },
+  { name: "變化球首選", cat: "Iron", type: "投手", baseScore: 6.8, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "投變化球時變化+5、控球+3。" },
+  { name: "自信", cat: "Bronze", type: "投手", baseScore: 6.5, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "前一位打者三振時球速、變化+6。" },
+  { name: "變化球專家", cat: "Iron", type: "打者", baseScore: 5.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "遇到變化球時準確+5、耐力+3。" },
+  { name: "初球攻略", cat: "Bronze", type: "打者", baseScore: 5.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "第1球全能力+5。" },
+  { name: "選球眼", cat: "Silver", type: "打者", baseScore: 5.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "壞球時擦棒球機率+15%。" },
+  { name: "直球專家", cat: "Iron", type: "打者", baseScore: 5.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "遇到直球時準確+5、耐力+3。" },
+  { name: "快速球首選", cat: "Iron", type: "投手", baseScore: 4.5, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "投快速球時球速+5、球威+3。" },
+  { name: "勝負精神", cat: "Bronze", type: "打者", baseScore: 4.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "領先時力準選+5。" },
+  { name: "拉打", cat: "Iron", type: "打者", baseScore: 4.2, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "拉打時力量+5。" },
+  { name: "推打", cat: "Iron", type: "打者", baseScore: 4.0, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "推打時力量+5。" },
+  { name: "耐心", cat: "Bronze", type: "打者", baseScore: 3.8, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "落後時力準選+5。" },
+  { name: "滿球數 (投)", cat: "Iron", type: "投手", baseScore: 3.2, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "滿球數時速威變控+5。" },
+  { name: "滿球數 (打)", cat: "Iron", type: "打者", baseScore: 3.0, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用", posRule: "ANY", orderRule: "ANY", desc: "滿球數時全能力+5。" },
+  { name: "預防意外", cat: "Iron", type: "投手", baseScore: 2.8, hardRuleText: "", softRecText: "🟢 全投手通用", posRule: "P_ALL", orderRule: "ANY", desc: "失投紅中機率-2.5%。" },
+  { name: "大吃局數", cat: "Bronze", type: "投手", baseScore: 2.5, hardRuleText: "", softRecText: "必洗廢技", posRule: "P_ALL", orderRule: "ANY", desc: "持久力+5。灌水廢技。" },
+  { name: "短打專家", cat: "Iron", type: "打者", baseScore: 0.5, hardRuleText: "", softRecText: "必洗廢技", posRule: "ANY", orderRule: "ANY", desc: "短打成功35%良好擊球。全遊戲最底層廢技。" }
+];
+
+let currentQuickCat = "ALL";
+
+// ==================== 嚴格區分「硬性限制」、「局數契合」與「軟性推薦」計分引擎 ====================
+function computeDynamicScore(skill, pos, batOrder, lvlMult) {
+  let score = skill.baseScore;
+  let notes = [];
+  let hasPenalty = false;
+  let hasBonus = false;
+
+  // 1. 檢查守位 / 投手輪值 (針對硬性限制 posRule 進行懲處)
+  if (pos !== "ALL") {
+    const pitcherPositions = ["SP1", "SP2", "SP34", "SP5", "RP12", "RP345", "CP"];
+    const isPitcherPos = pitcherPositions.includes(pos);
+    if (isPitcherPos && skill.type === "打者") return null;
+    if (!isPitcherPos && skill.type === "投手") return null;
+
+    // --- 打者硬性守位規則 ---
+    if (skill.posRule === "DH_ONLY") {
+      if (pos === "DH") { score += 3.0; notes.push("★ 符合 DH 硬性條件"); hasBonus = true; }
+      else { score *= 0.42; notes.push("❌ 違反硬性限制：非 DH 損失專屬效果"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "NO_DH") {
+      if (pos === "DH") { score *= 0.45; notes.push("❌ 違反硬性限制：放 DH 吃不到非DH加成"); hasPenalty = true; }
+      else { notes.push("★ 符合非 DH 野手條件"); hasBonus = true; }
+    }
+    else if (skill.posRule === "2B_ONLY") {
+      if (pos === "2B") { score += 2.5; notes.push("★ 符合 2B 硬性守位"); hasBonus = true; }
+      else { score *= 0.5; notes.push("❌ 違反硬性限制：非 2B 損失守位+8"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "LF_RF") {
+      if (pos === "LF" || pos === "RF") { score += 4.5; notes.push("★ 符合 LF/RF 硬性守位 (+8全開)"); hasBonus = true; }
+      else { score *= 0.4; notes.push("❌ 違反硬性限制：非 LF/RF 損失額外+8"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "MID_ONLY") {
+      if (["C", "2B", "SS", "CF"].includes(pos)) { score += 3.5; notes.push("★ 符合中線硬性守位"); hasBonus = true; }
+      else { score *= 0.42; notes.push("❌ 違反硬性限制：非中線(C/2B/SS/CF)無效"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "C_ONLY") {
+      if (pos === "C") { score += 6.0; notes.push("★ 符合捕手硬性守位 (全隊光環生效)"); hasBonus = true; }
+      else { score *= 0.35; notes.push("❌ 違反硬性限制：非捕手無全隊投手光環"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "PH_ONLY") {
+      score *= 0.45; notes.push("❌ 違反硬性限制：先發上場無法觸發代打第1打席+9"); hasPenalty = true;
+    }
+
+    // --- 投手硬性輪值規則 ---
+    if (skill.posRule === "SP1") {
+      if (pos === "SP1") { score += 3.0; notes.push("★ 符合第 1 號先發硬性條件"); hasBonus = true; }
+      else { score *= 0.35; notes.push("❌ 違反硬性限制：僅限第 1 號先發 (SP1) 有效"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "SP12") {
+      if (pos === "SP1" || pos === "SP2") { score += 3.0; notes.push("★ 符合 1、2 號先發硬性條件"); hasBonus = true; }
+      else { score *= 0.42; notes.push("❌ 違反硬性限制：僅限第 1、2 號先發有效"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "SP34") {
+      if (pos === "SP34") { score += 4.0; notes.push("★ 符合 3、4 號先發硬性條件"); hasBonus = true; }
+      else { score *= 0.42; notes.push("❌ 違反硬性限制：僅限第 3、4 號先發有效"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "SP_ALL") {
+      if (["SP1", "SP2", "SP34", "SP5"].includes(pos)) { score += 1.5; notes.push("★ 符合先發 (SP) 硬性條件"); hasBonus = true; }
+      else { score *= 0.3; notes.push("❌ 違反硬性限制：先發專屬技，放 RP/CP 無效"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "SP345_RP345") {
+      if (["SP34", "SP5", "RP345"].includes(pos)) { score += 2.0; notes.push("★ 符合 3~5號先發/中繼 硬性條件"); hasBonus = true; }
+      else { score *= 0.38; notes.push("❌ 違反硬性限制：僅限 3~5號先發 或 3~5號中繼"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "RP_ONLY") {
+      if (pos === "RP12" || pos === "RP345") { score += 2.0; notes.push("★ 符合中繼 (RP) 硬性條件"); hasBonus = true; }
+      else if (pos === "CP") { score *= 0.35; notes.push("❌ 違反硬性限制：僅限中繼(RP)，放終結者(CP)無效！"); hasPenalty = true; }
+      else { score *= 0.3; notes.push("❌ 違反硬性限制：僅限中繼(RP)，放先發(SP)無效！"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "CP_ONLY") {
+      if (pos === "CP") { score += 4.0; notes.push("★ 符合終結者 (CP) 硬性條件"); hasBonus = true; }
+      else if (pos === "RP12" || pos === "RP345") { score *= 0.3; notes.push("❌ 違反硬性限制：終結者(CP)專屬，放中繼(RP)無效！"); hasPenalty = true; }
+      else { score *= 0.25; notes.push("❌ 違反硬性限制：終結者(CP)專屬，放先發(SP)無效！"); hasPenalty = true; }
+    }
+    else if (skill.posRule === "RP_CP") {
+      if (["RP12", "RP345", "CP"].includes(pos)) { score += 2.0; notes.push("★ 符合後援 (RP/CP) 條件"); hasBonus = true; }
+      else { score *= 0.3; notes.push("❌ 違反硬性限制：後援專屬技，放先發(SP)無效！"); hasPenalty = true; }
+    }
+
+    // --- 2. 投手局數契合度動態判定 (解決 SP/RP 錯位問題) ---
+    if (isPitcherPos) {
+      const isStarter = pos.startsWith("SP");
+      const isReliever = pos.startsWith("RP") || pos === "CP";
+
+      // 前段局數爆發型
+      if (skill.name === "超速節奏 (投)") {
+        if (isReliever) {
+          score *= 0.55; 
+          notes.push("❌ 戰術衝突：後援吃不到 1~3 局大加成，形同白板"); 
+          hasPenalty = true;
+        } else if (isStarter) {
+          score += 3.5; 
+          notes.push("★ 局數契合：完美覆蓋先發前 6 局"); 
+          hasBonus = true;
+        }
+      }
+      // 後段局數發力型
+      else if (["疊加 (投)", "慢熱型 (投)"].includes(skill.name)) {
+        if (isStarter) {
+          score *= 0.75; 
+          notes.push("⚠️ 局數弱勢：先發體力難以撐到第 7 局吃滿加成"); 
+          hasPenalty = true;
+        } else if (isReliever) {
+          score += 4.5; 
+          notes.push("★ 局數契合：完美對應後援登板局數"); 
+          hasBonus = true;
+        }
+      }
+    }
+  }
+
+  // 3. 檢查打序棒次 (僅針對遊戲內明寫的硬性棒次 orderRule 扣分)
+  if (batOrder !== "ALL" && skill.type === "打者" && skill.orderRule !== "ANY") {
+    if (skill.orderRule === "2345") {
+      if (batOrder === "2" || batOrder === "3") {
+        score += 2.5; notes.push("★ 符合第 2、3 棒最佳硬性條件 (威變-12)"); hasBonus = true;
+      } else if (batOrder === "4" || batOrder === "5") {
+        score -= 2.0; notes.push("★ 符合第 4、5 棒硬性條件 (力準選+6)"); hasBonus = true;
+      } else {
+        score *= 0.52; notes.push("❌ 違反硬性棒次：放第 1 或 6~9 棒吃不到棒次加成！"); hasPenalty = true;
+      }
+    } else {
+      const isMatch = skill.orderRule.includes(batOrder);
+      if (isMatch) {
+        score += 2.5; notes.push("★ 符合硬性棒次條件"); hasBonus = true;
+      } else {
+        const readableOrders = skill.orderRule === "126789" ? "1/2/6~9" : skill.orderRule.split('').join('/');
+        score *= 0.48; notes.push(`❌ 違反硬性棒次：需放第 ${readableOrders} 棒才生效！`); hasPenalty = true;
+      }
+    }
+  }
+
+  const finalScore = score * lvlMult;
+  return {
+    finalScore,
+    note: notes.join(" ｜ "),
+    noteType: hasPenalty ? "penalty" : (hasBonus ? "bonus" : "")
+  };
+}
+
+function getSkillTier(skill, currentScore, lvlMult) {
+  const normScore = currentScore / lvlMult;
+  if (skill.cat === "HOF" || skill.cat === "Moment") {
+    if (normScore >= 47) return "S+";
+    if (normScore >= 40) return "S";
+    if (normScore >= 30) return "A";
+    if (normScore >= 20) return "B";
+    return "C";
+  } else {
+    if (normScore >= 25.0) return "S+";
+    if (normScore >= 21.0) return "S";
+    if (normScore >= 17.0) return "A";
+    if (normScore >= 11.5) return "B";
+    if (normScore >= 5.0) return "C";
+    return "D";
+  }
+}
+
+// ==================== 第一部分：渲染技能天梯表 ====================
+function setQuickCat(cat, el) {
+  currentQuickCat = cat;
+  document.querySelectorAll('.cat-pills .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderRanking();
+}
+
+function renderRanking() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const typeF = document.getElementById('typeFilter').value;
+  const posF = document.getElementById('posFilter').value;
+  const orderF = document.getElementById('batOrderFilter').value;
+  const lvlMult = parseFloat(document.getElementById('lvlFilter').value);
+
+  const tbody = document.getElementById('rankingBody');
+  tbody.innerHTML = "";
+
+  let list = [];
+  skillsDB.forEach(s => {
+    if (currentQuickCat === "HOF" && s.cat !== "HOF") return;
+    if (currentQuickCat === "Moment" && s.cat !== "Moment") return;
+    if (currentQuickCat === "GENERAL" && (s.cat === "HOF" || s.cat === "Moment")) return;
+    if (currentQuickCat === "Gold" && s.cat !== "Gold") return;
+    if (currentQuickCat === "Silver" && s.cat !== "Silver") return;
+    if (currentQuickCat === "Bronze" && s.cat !== "Bronze" && s.cat !== "Iron") return;
+
+    if (typeF !== "ALL" && s.type !== typeF) return;
+    if (search && !s.name.toLowerCase().includes(search) && !s.desc.toLowerCase().includes(search) && !s.hardRuleText.toLowerCase().includes(search) && !s.softRecText.toLowerCase().includes(search)) return;
+
+    const calc = computeDynamicScore(s, posF, orderF, lvlMult);
+    if (!calc) return;
+
+    list.push({
+      ...s,
+      currentScore: calc.finalScore,
+      note: calc.note,
+      noteType: calc.noteType,
+      tier: getSkillTier(s, calc.finalScore, lvlMult)
+    });
+  });
+
+  list.sort((a, b) => b.currentScore - a.currentScore);
+
+  list.forEach((s, idx) => {
+    const tierClass = s.tier === "S+" ? "tier-S-plus" : `tier-${s.tier}`;
+    const noteHtml = s.note ? `<span class="${s.noteType === 'bonus' ? 'bonus-hint' : 'penalty-hint'}">${s.note}</span>` : "";
+    
+    let ruleDisplay = "";
+    if (s.hardRuleText) {
+      ruleDisplay += `<div class="rule-hard">${s.hardRuleText}</div>`;
+    }
+    if (s.softRecText) {
+      ruleDisplay += `<div class="rule-soft">${s.softRecText}</div>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>#${idx + 1}</strong></td>
+      <td><span class="badge ${tierClass}">${s.tier}</span></td>
+      <td><strong>${s.name}</strong></td>
+      <td><span class="cat-tag cat-${s.cat}">${s.cat}</span><span class="cat-tag" style="background:#1e293b;color:#cbd5e1;">${s.type}</span></td>
+      <td><span class="score-num">${s.currentScore.toFixed(1)}</span>${noteHtml}</td>
+      <td>${ruleDisplay}</td>
+      <td>${s.desc}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ==================== 第二部分：球員卡三技畢業檢測機 ====================
+function resetLevelsToS() {
+  document.getElementById('slot1Lvl').value = "1.00";
+  document.getElementById('slot2Lvl').value = "1.00";
+  document.getElementById('slot3Lvl').value = "1.00";
+}
+
+function resetForNextPlayer() {
+  resetLevelsToS();
+  document.getElementById('slot1Skill').selectedIndex = 0;
+  document.getElementById('slot2Skill').selectedIndex = 1;
+  document.getElementById('slot3Skill').selectedIndex = 2;
+  evaluateCard();
+}
+
+function onPlayerConfigChange(rebuildPools) {
+  // 切換球員配置或卡種時，自動將 3 個技能等級重置回 S 級
+  resetLevelsToS();
+  if (rebuildPools) {
+    updateEvaluatorPools();
+  } else {
+    evaluateCard();
+  }
+}
+
+function updateEvaluatorPools() {
+  const cardType = document.getElementById('evalCardType').value;
+  const role = document.getElementById('evalPlayerRole').value;
+  const posSelect = document.getElementById('evalPos');
+  const orderGroup = document.getElementById('evalBatOrderGroup');
+
+  posSelect.innerHTML = "";
+  if (role === "打者") {
+    orderGroup.style.display = "flex";
+    const batterPositions = [
+      { v: "C", t: "C (捕手 - 中線)" },
+      { v: "1B", t: "1B (一壘手 - 角落)" },
+      { v: "2B", t: "2B (二壘手 - 中線)" },
+      { v: "3B", t: "3B (三壘手 - 角落)" },
+      { v: "SS", t: "SS (游擊手 - 中線)" },
+      { v: "LF", t: "LF (左外野 - 角落)" },
+      { v: "CF", t: "CF (中外野 - 中線)" },
+      { v: "RF", t: "RF (右外野 - 角落)" },
+      { v: "DH", t: "DH (指定打擊)" }
+    ];
+    batterPositions.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.v; opt.textContent = p.t;
+      posSelect.appendChild(opt);
+    });
+  } else {
+    orderGroup.style.display = "none";
+    const pitcherPositions = [
+      { v: "SP1", t: "SP1 (第 1 號王牌先發)" },
+      { v: "SP2", t: "SP2 (第 2 號先發)" },
+      { v: "SP34", t: "SP3~4 (第 3、4 號先發)" },
+      { v: "SP5", t: "SP5 (第 5 號先發)" },
+      { v: "RP12", t: "RP1~2 (中繼 1、2 號 / 勝利組佈局)" },
+      { v: "RP345", t: "RP3~5 (中繼 3、4、5 號 / 長中繼)" },
+      { v: "CP", t: "CP (終結者 / 第9局關門)" }
+    ];
+    pitcherPositions.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.v; opt.textContent = p.t;
+      posSelect.appendChild(opt);
+    });
+  }
+
+  const s1Title = document.getElementById('slot1Title');
+  const s2Title = document.getElementById('slot2Title');
+  const s3Title = document.getElementById('slot3Title');
+
+  if (cardType === "SIG") {
+    s1Title.textContent = "【第 1 格技能】(一般池：金/銀/銅/鐵)";
+    s2Title.textContent = "【第 2 格技能】(一般池：金/銀/銅/鐵)";
+    s3Title.textContent = "【第 3 格技能】(一般池：金/銀/銅/鐵)";
+    populateSkillSelect('slot1Skill', role, ["Gold", "Silver", "Bronze", "Iron"], 0);
+    populateSkillSelect('slot2Skill', role, ["Gold", "Silver", "Bronze", "Iron"], 1);
+    populateSkillSelect('slot3Skill', role, ["Gold", "Silver", "Bronze", "Iron"], 2);
+  } else if (cardType === "MOMENT") {
+    s1Title.textContent = "【第 1 格技能】(Moment 卡第1格可洗專屬綠技或一般技)";
+    s2Title.textContent = "【第 2 格技能】(一般池：金/銀/銅/鐵)";
+    s3Title.textContent = "【第 3 格技能】(一般池：金/銀/銅/鐵)";
+    populateSkillSelect('slot1Skill', role, ["Moment", "Gold", "Silver", "Bronze", "Iron"], 0);
+    populateSkillSelect('slot2Skill', role, ["Gold", "Silver", "Bronze", "Iron"], 0);
+    populateSkillSelect('slot3Skill', role, ["Gold", "Silver", "Bronze", "Iron"], 1);
+  } else if (cardType === "HOF") {
+    s1Title.textContent = "【第 1 格技能】(HOF 卡可洗名人堂黑技或一般技)";
+    s2Title.textContent = "【第 2 格技能】(HOF 卡可洗名人堂黑技或一般技)";
+    s3Title.textContent = "【第 3 格技能】(HOF 卡可洗名人堂黑技或一般技)";
+    populateSkillSelect('slot1Skill', role, ["HOF", "Gold", "Silver", "Bronze", "Iron"], 0);
+    populateSkillSelect('slot2Skill', role, ["HOF", "Gold", "Silver", "Bronze", "Iron"], 1);
+    populateSkillSelect('slot3Skill', role, ["HOF", "Gold", "Silver", "Bronze", "Iron"], 25);
+  }
+
+  evaluateCard();
+}
+
+function populateSkillSelect(selectId, role, allowedCats, defaultIdx) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = "";
+  const pool = skillsDB.filter(s => s.type === role && allowedCats.includes(s.cat));
+
+  const catLabels = { HOF: "🟧 HOF 名人堂黑技", Moment: "💚 Moment 專屬綠技", Gold: "🥇 黃金段位技能", Silver: "🥈 白銀段位技能", Bronze: "🥉 青銅段位技能", Iron: "🔩 鋼鐵段位技能" };
+
+  allowedCats.forEach(cat => {
+    const subList = pool.filter(s => s.cat === cat).sort((a, b) => b.baseScore - a.baseScore);
+    if (subList.length > 0) {
+      const grp = document.createElement('optgroup');
+      grp.label = catLabels[cat];
+      subList.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.name;
+        const ruleTag = s.hardRuleText ? ` [${s.hardRuleText.replace('🔴 硬性限定：', '限:')}]` : "";
+        opt.textContent = `[${s.cat}] ${s.name} (${s.baseScore}分)${ruleTag}`;
+        grp.appendChild(opt);
+      });
+      sel.appendChild(grp);
+    }
+  });
+
+  if (sel.options.length > defaultIdx) sel.selectedIndex = defaultIdx;
+}
+
+function evaluateCard() {
+  const cardType = document.getElementById('evalCardType').value;
+  const role = document.getElementById('evalPlayerRole').value;
+  const pos = document.getElementById('evalPos').value;
+  const order = role === "打者" ? document.getElementById('evalBatOrder').value : "ALL";
+
+  const slots = [
+    { name: document.getElementById('slot1Skill').value, mult: parseFloat(document.getElementById('slot1Lvl').value), labelEl: 'slot1ScoreText' },
+    { name: document.getElementById('slot2Skill').value, mult: parseFloat(document.getElementById('slot2Lvl').value), labelEl: 'slot2ScoreText' },
+    { name: document.getElementById('slot3Skill').value, mult: parseFloat(document.getElementById('slot3Lvl').value), labelEl: 'slot3ScoreText' }
+  ];
+
+  let totalScore = 0;
+  let baseTotal = 0;
+  let hasHardConflict = false;
+  let analysisHtml = "";
+
+  slots.forEach((slot, i) => {
+    const skillObj = skillsDB.find(s => s.name === slot.name);
+    if (!skillObj) return;
+
+    const calc = computeDynamicScore(skillObj, pos, order, slot.mult);
+    const sScore = calc ? calc.finalScore : 0;
+    const bScore = calc ? (calc.finalScore / slot.mult) : 0;
+    totalScore += sScore;
+    baseTotal += bScore;
+
+    document.getElementById(slot.labelEl).textContent = `${sScore.toFixed(1)} 分`;
+
+    let itemClass = "analysis-item";
+    let statusBadge = "";
+    if (calc && calc.noteType === "penalty") {
+      itemClass = "analysis-item warn";
+      hasHardConflict = true;
+      statusBadge = `<strong style="color:#fb7185;">[${calc.note}]</strong>`;
+    } else if (skillObj.baseScore <= 13.6 && (skillObj.cat === "Gold" || skillObj.cat === "Moment" || skillObj.cat === "HOF")) {
+      itemClass = "analysis-item warn";
+      statusBadge = `<strong style="color:#fb7185;">[⚠️ 實戰陷阱/低效技能警告]</strong>`;
+    } else if (calc && calc.noteType === "bonus") {
+      itemClass = "analysis-item good";
+      statusBadge = `<strong style="color:#4ade80;">[${calc.note}]</strong>`;
+    }
+
+    const ruleInfo = skillObj.hardRuleText ? `<span class="rule-hard">${skillObj.hardRuleText}</span> ` : "";
+    const softInfo = skillObj.softRecText ? `<span class="rule-soft">${skillObj.softRecText}</span>` : "";
+
+    analysisHtml += `
+      <div class="${itemClass}">
+        <div><strong>第 ${i + 1} 格：【${skillObj.cat}】${skillObj.name}</strong> — 實戰貢獻 <strong>${sScore.toFixed(1)} 分</strong> ${statusBadge}</div>
+        <div style="margin-top:6px;">${ruleInfo}${softInfo}</div>
+        <div style="color:var(--subtext); font-size:13px; margin-top:4px;">💡 效果解析：${skillObj.desc}</div>
+      </div>
+    `;
+  });
+
+  let targets = { god: 68, grad: 58, pass: 45 };
+  if (cardType === "MOMENT") {
+    targets = { god: 92, grad: 80, pass: 65 };
+  } else if (cardType === "HOF") {
+    targets = { god: 135, grad: 100, pass: 80 };
+  }
+
+  const s1Obj = skillsDB.find(s => s.name === slots[0].name);
+  const hasHof = slots.some(sl => skillsDB.find(s => s.name === sl.name)?.cat === "HOF");
+
+  let verdictTitle = "";
+  let verdictSub = "";
+  let borderColor = "#334155";
+
+  if (cardType === "MOMENT" && s1Obj && s1Obj.cat !== "Moment") {
+    verdictTitle = "❌ 未達標：Moment 卡第 1 格尚未洗出專屬綠技！";
+    verdictSub = "Moment 卡的核心價值在於第 1 格的專屬綠技，請優先洗出 S / S+ 級綠技後再鎖定洗第 2、3 格。";
+    borderColor = "#f43f5e";
+  } else if (cardType === "HOF" && !hasHof) {
+    verdictTitle = "❌ 未達標：HOF 名人堂卡尚未洗出任何 HOF 黑技！";
+    verdictSub = "名人堂卡至少需具備 1～2 個核心 HOF 黑技才能發揮價值，建議繼續使用高級/頂級技能券洗鍊。";
+    borderColor = "#f43f5e";
+  } else if (hasHardConflict) {
+    verdictTitle = "🚨 【硬性定位衝突！】技能與目前的守位 / 輪值番號 / 棒次不相容";
+    verdictSub = "下方標示紅框的技能因放錯位置而無法觸發核心效果（例如新秀放1~2號、RP技放CP、棒次放錯），請立即調整陣容位置或重洗該技能！";
+    borderColor = "#f43f5e";
+  } else if (baseTotal >= targets.god) {
+    verdictTitle = "🏆 【SS 終極神卡畢業】完美無瑕，直接鎖死封神！";
+    verdictSub = "這組三技能完全符合守位與棒次硬性要求，且在排位賽客場環境具備頂級壓制力，一毛資源都不用再花！";
+    borderColor = "#f97316";
+  } else if (baseTotal >= targets.grad) {
+    verdictTitle = "✅ 【S 級正式畢業】實戰強度極高，可直接投入排位天梯！";
+    verdictSub = "核心主技與副技搭配非常紮實且無任何定位衝突，足以在高階排位賽穩定發揮。";
+    borderColor = "#10b981";
+  } else if (baseTotal >= targets.pass) {
+    verdictTitle = "⚠️ 【A 級堪用過渡】可先上場打工，建議存券洗掉最弱的一格";
+    verdictSub = "目前有 1～2 個好技能支撐，但混入了續航力差（如僅3名打者/8局後才觸發）或低階過渡技，之後可用鎖定券升級。";
+    borderColor = "#eab308";
+  } else {
+    verdictTitle = "🔄 【建議重洗】整體實戰效益偏低或含排位地雷技";
+    verdictSub = "技能組中包含排位賽無效的聯賽技、常駐為0的陷阱技或過多低階普技，建議繼續洗鍊。";
+    borderColor = "#64748b";
+  }
+
+  document.getElementById('totalScoreDisplay').textContent = totalScore.toFixed(1);
+  document.getElementById('verdictTitle').textContent = verdictTitle;
+  document.getElementById('verdictSub').textContent = verdictSub;
+  document.getElementById('reportHeaderBox').style.borderColor = borderColor;
+  document.getElementById('aiAnalysisList').innerHTML = analysisHtml;
+}
+
+function switchTab(tabId, btnEl) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(tabId).classList.add('active');
+  btnEl.classList.add('active');
+}
+
+window.onload = function() {
+  renderRanking();
+  updateEvaluatorPools();
+};
+</script>
+
+</body>
+</html>
