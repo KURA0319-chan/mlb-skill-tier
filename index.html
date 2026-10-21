@@ -302,6 +302,8 @@ const skillsDB = [
   { name: "BIG BATS", cat: "Moment", type: "打者", baseScore: 6.0, hardRuleText: "", softRecText: "⚠️常駐保底僅 6.0 點", posRule: "ANY", orderRule: "ANY", desc: "常駐力準 +3；對手 OVR 較低時力準 +5；擊球時機良好時力量 +10、準確 +5。越級挑戰時吃不到低 OVR 加成，且時機良好在自動模擬覆蓋率極低。" },
   { name: "FLASHBACK (打)", cat: "Moment", type: "打者", baseScore: 4.0, hardRuleText: "", softRecText: "⚠️無人在壘時僅 4.0 點", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力 +2；有跑者時力準耐 +3，每多 1 名跑者再 +3。無人在壘時僅有全能力 +2，首名打者上場形同白板。" },
   { name: "關鍵球員 (打)", cat: "Moment", type: "打者", baseScore: 6.0, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "🚨排位賽必洗地雷 (僅 12 點無扣防)", posRule: "ANY", orderRule: "ANY", desc: "常駐全能力 +6；額外力準選 +8 僅限聯賽模式生效。排位賽完全吃不到第二段加成，屬於必洗的排位地雷技。" },
+  { name: "WAR Leader (打)", cat: "Moment", type: "打者", baseScore: 31.5, hardRuleText: "", softRecText: "🟢 全位置/全棒次通用 (100%常駐純核心 30.0 點 + 選9)", posRule: "ANY", orderRule: "ANY", desc: "無條件常駐力量、準確、選球 +9，並常駐降低對手球威、變化 6。完全不挑守位與棒次、無打席與球數限制，100% 全程滿載的 Moment 通用第一真神。" },
+  { name: "2026年度表現三人組 (打)", cat: "Moment", type: "打者", baseScore: 19.5, hardRuleText: "🔴 模式限定：額外+10 僅聯賽/即時對戰生效", softRecText: "⚠️排位賽僅有常駐全能力+10 (純核心 20.0 點無扣防)", posRule: "ANY", orderRule: "ANY", desc: "無條件常駐全能力 +10；注意第二段額外全能力 +10 僅限聯賽與即時對戰生效，排位賽不觸發且無扣防效果，實戰屬於穩健型純數值 A+ 綠技。" },
 
   // ==================== 4. Moment 專屬綠技 - 投手 (23招：範圍 6.0 ~ 34.0 點) ====================
   // --- Tier S+ (26.0 ~ 34.0 點) ---
@@ -334,6 +336,8 @@ const skillsDB = [
   { name: "資深球員 (投)", cat: "Moment", type: "投手", baseScore: 8.0, hardRuleText: "", softRecText: "常駐僅 8.0 點", posRule: "P_ALL", orderRule: "ANY", desc: "常駐威速變控 +4；領先時額外 +2。常駐數值過低，且平手或落後時無額外加成。" },
   { name: "FLASHBACK (投)", cat: "Moment", type: "投手", baseScore: 4.0, posFallback: 2.0, hardRuleText: "🔴 硬性限定：後援 (RP / CP)", softRecText: "⚠️無人在壘時僅 4.0 點", posRule: "RP_CP", orderRule: "ANY", desc: "常駐全能力 +2；後援上場有跑者時速變威 +3，每多 1 名跑者再 +3。無人在壘時僅有 +2，壓制力嚴重不足。" },
   { name: "關鍵球員 (投)", cat: "Moment", type: "投手", baseScore: 6.0, hardRuleText: "🔴 模式限定：聯賽模式專用", softRecText: "🚨排位賽必洗地雷", posRule: "P_ALL", orderRule: "ANY", desc: "常駐全能力 +6；額外威變控 +8 僅限聯賽模式生效。排位賽完全無效的必洗地雷技。" },
+  { name: "WAR Leader (投)", cat: "Moment", type: "投手", baseScore: 31.5, hardRuleText: "", softRecText: "🟢 全投手定位通用 (100%常駐純核心 30.0 點 + 扣選6)", posRule: "P_ALL", orderRule: "ANY", desc: "無條件常駐球威、變化 +9，並常駐降低打者力量、準確、選球 6。先發、中繼、終結者皆可 100% 全程滿載生效，零條件門檻的 T0 頂尖神技。" },
+  { name: "2026年度表現三人組 (投)", cat: "Moment", type: "投手", baseScore: 19.5, hardRuleText: "🔴 模式限定：額外+10 僅聯賽/即時對戰生效", softRecText: "⚠️排位賽僅有常駐全能力+10 (純核心 20.0 點無扣防)", posRule: "P_ALL", orderRule: "ANY", desc: "無條件常駐全能力 +10；注意第二段額外全能力 +10 在排位賽不觸發，且缺乏扣防效果，在排位賽僅作為純數值常駐 A+ 綠技使用。" },
 
   // ==================== 5. 黃金段位技能 (Gold) - 打者 (38招：範圍 1.0 ~ 17.5 點) ====================
   // --- Tier S+ (15.5 ~ 17.5 點：金技 T0 頂點) ---
@@ -432,6 +436,7 @@ const skillsDB = [
   { name: "勝利的吶喊 (投)", cat: "Gold", type: "投手", baseScore: 5.0, hardRuleText: "", softRecText: "⚠️平手/落後時 0 球威 (僅變化 5.0 點)", posRule: "P_ALL", orderRule: "ANY", desc: "常駐變化、控球 +5；僅在領先（贏球）時球威、球速 +7。平手與落後時完全沒有球威加成。" },
   { name: "打斷氣勢", cat: "Gold", type: "投手", baseScore: 4.5, posFallback: 1.5, hardRuleText: "", softRecText: "🚨常駐 0 點！第4名打者起完全白板", posRule: "RP_CP", orderRule: "ANY", desc: "常駐能力為 0；後援上場僅對付前 3 名打者期間威速變控 +6。面對第 4 名打者起完全歸零變白板。" },
   { name: "聯賽強者 (投)", cat: "Gold", type: "投手", baseScore: 2.0, hardRuleText: "🔴 模式限定：聯賽專用", softRecText: "排位賽 0 點廢技", posRule: "P_ALL", orderRule: "ANY", desc: "常駐體守 +5；額外威變控 +8 僅限聯賽模式生效。排位賽完全無效的必洗廢技。" },
+  { name: "迅速處理", cat: "Gold", type: "投手", baseScore: 13.8, posFallback: 0.0, hardRuleText: "🔴 硬性限定：中繼投手 (RP1~RP5)", softRecText: "🟢 短局數中繼爆發神技 (放先發SP或終結者CP為 0 點白板)", posRule: "RP_ONLY", orderRule: "ANY", desc: "以中繼投手上場時球威、變化 +14，每取得 1 個出局數減少 1（最低維持 +2）。中繼登板前 1～2 局威變加幅極為狂暴，但放先發或終結者完全無效。" },
 
   // ==================== 7. 白銀/青銅/鋼鐵 普技 (29招：統一換算核心有效點數) ====================
   { name: "右打專家", cat: "Silver", type: "投手", baseScore: 8.0, hardRuleText: "", softRecText: "🟢 銀技第一神技 (對右打扣力準 10.0 點 × 80%場次)", posRule: "P_ALL", orderRule: "ANY", desc: "面對右打者時，降低打者力量、準確 5。排位賽右打者占大多數，實戰覆蓋率極高，表現甚至勝過許多低階條件金技。" },
